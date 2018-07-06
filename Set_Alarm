@@ -1,0 +1,44 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace CalarSaat
+{
+    public partial class AlarmAyarla : Form
+    {
+        private Alarm alarm;
+
+        public AlarmAyarla(Alarm alarm)
+        {
+            InitializeComponent();
+            this.alarm = alarm;
+        }
+
+        private void btnVazgec_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void AlarmAyarla_Load(object sender, EventArgs e)
+        {
+            DateTime dt = DateTime.Now;
+
+            numericDakika.Value = dt.Minute;
+            numericSaat.Value = dt.Hour;
+        }
+
+        private void btnAyarla_Click(object sender, EventArgs e)
+        {
+            alarm.Saat = Convert.ToInt32(numericSaat.Value);
+            alarm.Dakika = Convert.ToInt32(numericDakika.Value);
+            alarm.Kuruldu = true;
+            this.Close();
+        }
+    }
+}
