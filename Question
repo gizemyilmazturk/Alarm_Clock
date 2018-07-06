@@ -1,0 +1,127 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace CalarSaat
+{
+    public class Soru
+    {
+        public int ID { get; set; }
+        public string SoruIcerik { get; set; }
+        public string Cevap { get; set; }
+
+        public Soru()
+        {
+
+        }
+
+        public Soru(int ID, string Soru, string Cevap)
+        {
+            this.ID = ID;
+            this.SoruIcerik = Soru;
+            this.Cevap = Cevap;
+        }
+
+        string connectionString = "Data Source=188.121.44.214; Initial Catalog=CalarSaat; uid=UsrGizem; pwd=gizem112233";
+
+        //  Azure dan cevaplanmamış bütün soruları getirir.
+        public List<Soru> SoruGetir()
+        {
+            List<Soru> sorular = new List<Soru>();
+
+            string sorgu = "select * from Soru where CevaplanmaDurumu = 0";
+
+            //  connection nesnesi veri tabanı için köprü görevi görür.
+            SqlConnection connection = new SqlConnection(connectionString);
+            SqlCommand command = new SqlCommand(sorgu, connection);
+
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+
+            //  Data getirme işlemlerinde ExecuteReader() fonksiyonu kullanılır.
+            SqlDataReader reader = command.ExecuteReader();
+            Soru s;
+            while (reader.Read())
+            {
+                s = new Soru();
+
+                s.ID = Convert.ToInt32(reader[0]);
+                s.SoruIcerik = reader[1].ToString();
+                s.Cevap = reader[2].ToString();
+
+                sorular.Add(s);
+            }
+
+            if (connection.State == ConnectionState.Open)
+                connection.Close();
+
+            return sorular;
+        }
+
+        //  Soru doğru cevaplandıktan sonra bütün sorular alarm için kullanılana kadar tek tek soruları kaldırır.
+        public void SoruyuKaldir(int ID)
+        {
+            string sorgu = "update Soru set CevaplanmaDurumu = 1 where ID = "+ID;
+
+            SqlConnection connection = new SqlConnection(connectionString);
+            SqlCommand command = new SqlCommand(sorgu, connection);
+
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+
+            //  Data ekleme, silme ve UPDATE etme işlemlerinde ExecuteNonQuery() kullanılır.
+            command.ExecuteNonQuery();
+            
+            if (connection.State == ConnectionState.Open)
+                connection.Close();
+        }
+
+        /*
+           Azure dan cevaplanmamış soruların sayısını getirir. 
+         * SoruGetir fonksiyonundan da sayı elde edilebilirdi. Ancak SoruGetir fonksiyonu soruları ve cevapları getirir.
+         * Fonksiyon 0 (sıfır) dönerse bütün sorular kullanıldı anlamına gelir.
+         */
+        public int CevaplanmayanSoruSayisi()
+        {
+            int sayi = 0;
+
+            string sorgu = "select count(*) from Soru where CevaplanmaDurumu = 0";
+
+            SqlConnection connection = new SqlConnection(connectionString);
+            SqlCommand command = new SqlCommand(sorgu, connection);
+
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+
+            //  Tek bir hücreden oluşan veri getirir.
+            sayi = Convert.ToInt32(command.ExecuteScalar());
+
+            if (connection.State == ConnectionState.Open)
+                connection.Close();
+
+            return sayi;
+        }
+
+        //  Bütün sorular kullanıldıktan sonra, hepsini yeniden elde edilebilmesi için görünür yapar.
+        public void TumSorulariGeriYukle()
+        {
+            string sorgu = "update Soru set CevaplanmaDurumu = 0";
+
+            SqlConnection connection = new SqlConnection(connectionString);
+            SqlCommand command = new SqlCommand(sorgu, connection);
+
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+
+            //  Data ekleme, silme ve UPDATE etme işlemlerinde ExecuteNonQuery() kullanılır.
+            command.ExecuteNonQuery();
+
+            if (connection.State == ConnectionState.Open)
+                connection.Close();
+        }
+    }
+}
