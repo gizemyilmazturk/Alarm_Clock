@@ -1,0 +1,140 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Media;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace CalarSaat
+{
+    public partial class Form1 : Form
+    {
+        Alarm alarmNesnesi;
+        Soru soru;
+        SoundPlayer player;
+
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void btnAlarmKur_Click(object sender, EventArgs e)
+        {
+            alarmNesnesi = new Alarm();
+
+            AlarmAyarla a = new AlarmAyarla(alarmNesnesi);
+            a.ShowDialog(); // Saat Kurma Penceresini açar
+
+            if (alarmNesnesi.Kuruldu)
+            {
+                timerAlarm.Start();
+                panelAlarmYok.Visible = false;
+                panelAlarmBilgi.Visible = true;
+                labelKurulanAlarm.Text = alarmNesnesi.Saat + " : " + alarmNesnesi.Dakika;
+
+                btnTemizle.Enabled = true;
+            }
+            else
+            {
+                btnTemizle_Click(null, null);
+                btnTemizle.Enabled = false;
+            }
+
+            a.Dispose();
+        }
+
+        
+        private void timerAlarm_Tick(object sender, EventArgs e)
+        {
+            DateTime dt = DateTime.Now;
+            //  Alarm saati ve dakikası geldiğinde çalışacak olan kod. 
+            if (alarmNesnesi.Saat == dt.Hour && alarmNesnesi.Dakika == dt.Minute)
+            {
+                timerAlarm.Stop();
+
+                panelAlarmBilgi.Visible = false;
+                panelSoruCevap.Visible = true;
+                btnTemizle.Enabled = false;
+                btnAlarmKur.Enabled = false;
+
+                Soru s = new Soru();
+
+                List<Soru> sorular = s.SoruGetir();
+                Random rnd = new Random();
+                int rastegeleSoruIndex = rnd.Next(0, sorular.Count);
+
+                labelSoru.Text = sorular[rastegeleSoruIndex].SoruIcerik;
+                this.soru = sorular[rastegeleSoruIndex];
+
+                player = new SoundPlayer(Environment.CurrentDirectory + "\\Forgotten.wav");
+                player.PlayLooping();
+            }
+        }
+
+        //  Ekranda her zaman görünen saatin timer kodu
+        private void timerSaat_Tick(object sender, EventArgs e)
+        {
+            DateTime dt = DateTime.Now;
+            txtSaat.Text = dt.Hour.ToString();
+            txtDakika.Text = dt.Minute.ToString();
+            txtSaniye.Text = dt.Second.ToString();
+        }
+
+        private void btnTemizle_Click(object sender, EventArgs e)
+        {
+            timerAlarm.Stop();
+            panelAlarmBilgi.Visible = false;
+            panelAlarmYok.Visible = true;
+            alarmNesnesi = null;
+        }
+
+        //  Verilen cevabın konrolünü sağlar.
+        private void btnCevapGonder_Click(object sender, EventArgs e)
+        {
+            if (this.soru.Cevap.ToLower() == txtCevap.Text.ToLower())
+            {
+                player.Stop();
+                panelAlarmYok.Visible = true;
+                panelSoruCevap.Visible = false;
+                btnAlarmKur.Enabled = true;
+                txtCevap.Clear();
+
+                MessageBox.Show("Cevap doğru.", "TEBRİKLER", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                this.soru.SoruyuKaldir(this.soru.ID);
+
+                int cevaplanmayanSoruSayisi = this.soru.CevaplanmayanSoruSayisi();
+                if (cevaplanmayanSoruSayisi == 0)
+                    this.soru.TumSorulariGeriYukle();
+            }
+            else
+            {
+                MessageBox.Show("Yanlış cevap. Tekrar deneyiniz.", "YANLIŞ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtCevap.Clear();
+                txtCevap.Focus();       //  imleci tekrar textbox'a yerleştirir.
+            }
+        }
+    }
+
+    public class Alarm
+    {
+        public int Saat { get; set; }
+        public int Dakika { get; set; }
+        public bool Kuruldu { get; set; }
+
+        public Alarm()
+        {
+            this.Kuruldu = false;
+        }
+
+        public Alarm(int Saat, int Dakika, bool Kuruldu)
+        {
+            this.Saat = Saat;
+            this.Dakika = Dakika;
+            this.Kuruldu = false;
+        }
+    }
+}
